@@ -1,52 +1,52 @@
+
+from gtts import gTTS
+import google.generativeai as genai
 import os
 import streamlit as st
-from google import genai
 
-# Set up page config
-st.set_page_config(page_title="Fatima AI", page_icon="🤖", layout="centered")
+# Saitin shafin Streamlit da Sunan Fatima AI
+st.set_page_config(
+    page_title='Fatima AI - Hausa Voice Assistant', page_icon='🤖'
+)
 
-st.title("🤖 Fatima AI")
-st.write("Ina kwana! Ni ce Fatima AI, mai taimaka maka da harshen Hausa da Turanci.")
+# Nuna Hoton Logo a saman shafin (Zaka iya sanya hoton da ka zaba a nan ko barin sa)
+st.title('Fatima AI 🤖')
+st.subheader('Hausa Digital Assistant')
 
-# Initialize the Gemini client using the environment variable for the API key
-api_key = os.environ.get("GEMINI_API_KEY")
+# Karɓar API Key na Gemini daga gurin mai amfani
+api_key = st.text_input('Shigar da Gemini API Key ɗinka:', type='password')
 
-if not api_key:
-    st.warning("Don Allah a saita GEMINI_API_KEY a matsayin Secret a Render ko yanayin aiki.")
+if api_key:
+  genai.configure(api_key=api_key)
+  model = genai.GenerativeModel('gemini-pro')
+
+  # Wurin rubuta sako daga mai amfani
+  user_prompt = st.text_area(
+    'Me kake so Fatima AI ta taimake ka da shi a yau?'
+  )
+
+  if st.button('Aika Sako'):
+    if user_prompt:
+      with st.spinner('Fatima tana tunani...'):
+        # Samun amsa daga Gemini
+        response = model.generate_content(
+          user_prompt + ' (Ka ba da amsa a harshen Hausa kaɗai)'
+        )
+        response_text = response.text
+
+        # Nuna rubutun amsar a shafin
+        st.write('**Amsa:**')
+        st.write(response_text)
+
+        # Mayar da amsar ta zama murya (Text-to-Speech) a harshen Hausa
+        tts = gTTS(text=str(response_text), lang='ha')
+        audio_file = 'temp_audio.mp3'
+        tts.save(audio_file)
+
+        # Kunna sautin a cikin app din domin a saurara
+        st.audio(audio_file, format='audio/mp3')
+    else:
+      st.warning('Don Allah rubuta sako kafin ka danna maɓallin aika wa.')
 else:
-    client = genai.Client(api_key=api_key)
-
-    # Initialize chat history in session state if it doesn't exist
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    # Display chat history
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # Accept user input
-    if prompt := st.chat_input("Ka tambayi Fatima AI ko me kake so..."):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # Generate response using Gemini
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            try:
-                # Using the recommended gemini-2.5-flash model
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=prompt,
-                )
-                bot_response = response.text
-                message_placeholder.markdown(bot_response)
-                
-                # Add assistant response to chat history
-                st.session_state.messages.append({"role": "assistant", "content": bot_response})
-            except Exception as e:
-                error_msg = f"An samu matsala: {e}"
-                message_placeholder.error(error_msg)
-              
+  st.info('Don Allah shigar da Gemini API Key ɗinka a sama domin fara amfani da ita.')
+    
